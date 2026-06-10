@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: reputation
+      POSTGRES_PASSWORD: reputation
+      POSTGRES_DB: reputation
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rep-protocol-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reputation -d reputation"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  evaluation-worker:
+    build:
+      context: .
+      dockerfile: services/evaluation-worker/Dockerfile.dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgresql://reputation:reputation@postgres:5432/reputation
+      SECRETS_ENCRYPTION_KEY: dev-only-encryption-key-not-for-prod!!
+      WORKER_SECRET: dev-worker-secret
+      DOCKER_ENABLED: "true"
+      DOCKER_NETWORK: rep-protocol-net
+      AGENT_RUNNER_IMAGE: rep-protocol/agent-runner:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rep-protocol-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  rep-protocol-net:
+    name: rep-protocol-net
+
+volumes:
+  postgres_data:

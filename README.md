@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Reputation Protocol
 
-## Getting Started
+Independent, trustworthy evaluation for AI agents — hard to fake, costly to maintain.
 
-First, run the development server:
+## Architecture (split deployment)
+
+| Layer | Runs on | Role |
+|-------|---------|------|
+| **Next.js** | Vercel | UI + light API + job coordinator |
+| **Evaluation Worker** | Railway / Fly.io / VPS | Docker orchestration + agent execution |
+| **Agent Runner** | Ephemeral Docker container | Isolated probe of creator's LLM endpoint |
+| **PostgreSQL** | Supabase / Neon | Data + audit logs |
+| **Base** | On-chain | Staking & creator events |
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full flow diagram.
+
+## Quick start (local)
 
 ```bash
+# 1. Infrastructure
+docker compose up -d
+npm run docker:build-runner
+
+# 2. Database
+cp .env.example .env
+npm install
+npx prisma migrate dev --name init
+
+# 3. Coordinator (Next.js)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Worker runs via docker-compose on :8080
+# Next.js dispatches jobs to EVALUATION_WORKER_URL
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Key env vars
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Set on | Purpose |
+|----------|--------|---------|
+| `DATABASE_URL` | Vercel + Worker | Postgres connection |
+| `EVALUATION_WORKER_URL` | Vercel | Worker base URL |
+| `WORKER_SECRET` | Vercel + Worker | Auth between coordinator and worker |
+| `SECRETS_ENCRYPTION_KEY` | Vercel + Worker | Encrypt creator API keys |
+| `DOCKER_ENABLED` | Worker only | Spin up agent-runner containers |
+| `QSTASH_TOKEN` | Vercel | Async job dispatch in production |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+src/                          # Next.js coordinator (Vercel)
+services/evaluation-worker/   # Heavy evaluation service (VPS/Railway)
+docker/agent-runner/          # Ephemeral container image per run
+prisma/                       # Shared database schema
+contracts/                    # Base EVM staking contracts
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Evaluation lanes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Lane | Cost | Limit (90 days) | Runs on |
+|------|------|-----------------|---------|
+| Practice | $6/run | 40 | Evaluation Worker + Docker |
+| Certification | — | 2 | Evaluation Worker + Docker |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Vercel never executes agent code.**

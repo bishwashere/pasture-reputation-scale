@@ -1,0 +1,24 @@
+FROM node:20-alpine
+
+RUN apk add --no-cache docker-cli wget
+
+WORKDIR /app
+
+# Install worker deps
+COPY services/evaluation-worker/package.json ./package.json
+RUN npm install
+
+# Prisma schema + generate client
+COPY prisma ./prisma
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Worker source
+COPY services/evaluation-worker/tsconfig.json ./
+COPY services/evaluation-worker/src ./src
+
+ENV NODE_ENV=development
+ENV PORT=8080
+
+EXPOSE 8080
+
+CMD ["npx", "tsx", "src/index.ts"]

@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EvaluationLane {
+  PRACTICE
+  CERTIFICATION
+}
+
+enum EvaluationStatus {
+  QUEUED
+  RUNNING
+  PASSED
+  FAILED
+  ABANDONED
+  EXPIRED
+  CANCELLED
+}
+
+enum AgentStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+}
+
+enum BehaviorActionType {
+  LLM_REQUEST
+  LLM_RESPONSE
+  TOOL_CALL
+  TOOL_RESULT
+  FILE_CHANGE
+  ACTION
+  COST
+  SYSTEM
+}
+
+enum FeedbackLevel {
+  FULL
+  MINIMAL
+}
+
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  creator Creator?
+  agents  Agent[]
+  stakes  Stake[]
+}
+
+model Creator {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName        String
+  bio                String?
+  registrationTxHash String?
+  trustScore         Float    @default(0)
+  totalStaked        String   @default("0")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  agents         Agent[]
+  stakesReceived Stake[]
+}
+
+model Agent {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  creatorId String?
+  creator   Creator? @relation(fields: [creatorId], references: [id])
+
+  name        String
+  description String
+  platform    String
+  category    String
+  version     String @default("1.0.0")
+
+  // Bundle fields
+  codeRepoUrl      String?
+  modelEndpointUrl String?
+  encryptedApiKey  String?
+  endpointUrl      String?
+  docsUrl          String?
+  capabilities     Json   @default("[]")
+  tools            Json   @default("[]")
+  config           Json   @default("{}")
+  bundleHash       String
+  versionHash      String
+
+  status            AgentStatus @default(DRAFT)
+  performanceScore  Float       @default(0)
+  confidenceScore   Float       @default(0)
+  reputationScore   Float       @default(0)
+  certificationTier Int         @default(0)
+  lastCertifiedAt   DateTime?
+  reputationDecayAt DateTime    @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  evaluations Evaluation[]
+  versions    AgentVersion[]
+}
+
+model AgentVersion {
+  id              String   @id @default(cuid())
+  agentId         String
+  agent           Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  version         String
+  bundleHash      String
+  versionHash     String
+  changelog       String?
+  reputationReset Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model Evaluation {
+  id      String @id @default(cuid())
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  lane           EvaluationLane
+  status         EvaluationStatus @default(QUEUED)
+  feedbackLevel  FeedbackLevel    @default(FULL)
+
+  overallScore     Float?
+  reliabilityScore Float?
+  latencyScore     Float?
+  accuracyScore    Float?
+  performanceScore Float?
+  confidenceScore  Float?
+
+  results       Json?
+  failureReason String?
+  isPublicFailure Boolean @default(false)
+
+  runHash   String?
+  auditHash String?
+  costCents Int     @default(0)
+  paymentTxHash String?
+
+  commitmentAccepted Boolean   @default(false)
+  committedAt        DateTime?
+
+  qstashMessageId String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  behaviorLogs  BehaviorLog[]
+  behaviorAudit BehaviorAudit?
+}
+
+model BehaviorLog {
+  id           String             @id @default(cuid())
+  evaluationId String
+  evaluation   Evaluation         @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  sequence     Int
+  actionType   BehaviorActionType
+  payload      Json
+  costUsd      Float?
+  createdAt    DateTime           @default(now())
+
+  @@unique([evaluationId, sequence])
+  @@index([evaluationId])
+}
+
+model BehaviorAudit {
+  id           String     @id @default(cuid())
+  evaluationId String     @unique
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  runHash      String
+  auditHash    String
+  logCount     Int
+  createdAt    DateTime   @default(now())
+}
+
+model Stake {
+  id          String   @id @default(cuid())
+  stakerId    String
+  staker      User     @relation(fields: [stakerId], references: [id], onDelete: Cascade)
+  creatorId   String
+  creator     Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  amount      String
+  txHash      String   @unique
+  blockNumber Int?
+  createdAt   DateTime @default(now())
+}
+
+model ChainEvent {
+  id        String   @id @default(cuid())
+  txHash    String
+  logIndex  Int
+  eventName String
+  payload   Json
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([txHash, logIndex])
+}

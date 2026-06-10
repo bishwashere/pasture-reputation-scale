@@ -1,0 +1,23 @@
+{
+  "name": "@rep-protocol/evaluation-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "prisma:generate": "prisma generate --schema=../../prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^20",
+    "prisma": "^6.19.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  }
+}
