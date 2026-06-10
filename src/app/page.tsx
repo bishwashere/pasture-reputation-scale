@@ -134,34 +134,47 @@ export default function HomePage() {
             From zero to verified reputation in 5 steps
           </p>
 
-          {/* Step flow */}
-          <div className="flex flex-col gap-0 md:flex-row md:items-start">
+          {/* ── Mobile: vertical timeline ── */}
+          <ol className="flex flex-col gap-0 md:hidden">
             {steps.map((step, i) => (
-              <div key={step.number} className="flex md:flex-1 md:flex-col">
-                <div className="flex md:flex-col md:items-center">
-                  {/* Connector line + node */}
-                  <div className="flex flex-col items-center md:flex-row md:w-full">
-                    {/* Circle */}
-                    <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#0052FF] bg-zinc-950 text-xs font-bold text-[#0052FF]">
-                      {step.number}
-                    </div>
-                    {/* Horizontal line after (except last) */}
-                    {i < steps.length - 1 && (
-                      <div className="hidden h-px flex-1 border-t border-dashed border-zinc-700 md:block" />
-                    )}
+              <li key={step.number} className="flex gap-4">
+                {/* Left column: circle + connector line */}
+                <div className="flex flex-col items-center">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#0052FF] bg-zinc-950 text-xs font-bold text-[#0052FF]">
+                    {step.number}
                   </div>
-
-                  {/* Label + detail */}
-                  <div className="ml-4 pb-8 md:ml-0 md:mt-4 md:pb-0 md:text-center md:px-2">
-                    <p className="font-semibold text-white">{step.label}</p>
-                    <p className="mt-1 text-xs text-zinc-500">{step.detail}</p>
-                  </div>
+                  {i < steps.length - 1 && (
+                    <div className="my-1 w-px flex-1 border-l-2 border-dashed border-zinc-700" />
+                  )}
                 </div>
 
-                {/* Vertical connector for mobile */}
-                {i < steps.length - 1 && (
-                  <div className="ml-5 w-px self-stretch border-l border-dashed border-zinc-700 md:hidden" />
-                )}
+                {/* Right column: text */}
+                <div className={i < steps.length - 1 ? "pb-6 pt-2" : "pt-2"}>
+                  <p className="font-semibold text-white">{step.label}</p>
+                  <p className="mt-0.5 text-sm text-zinc-500">{step.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          {/* ── Desktop: horizontal chain ── */}
+          <div className="hidden md:flex md:items-start">
+            {steps.map((step, i) => (
+              <div key={step.number} className="flex flex-1 flex-col items-center">
+                {/* Row: circle + dashed line to next */}
+                <div className="flex w-full items-center">
+                  <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#0052FF] bg-zinc-950 text-xs font-bold text-[#0052FF]">
+                    {step.number}
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className="h-px flex-1 border-t-2 border-dashed border-zinc-700" />
+                  )}
+                </div>
+                {/* Label below */}
+                <div className="mt-4 px-2 text-center">
+                  <p className="font-semibold text-white">{step.label}</p>
+                  <p className="mt-1 text-xs text-zinc-500">{step.detail}</p>
+                </div>
               </div>
             ))}
           </div>
