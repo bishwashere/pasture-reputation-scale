@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import {
   buildPortableReputation,
-  computeConfidenceScore,
   computePublicReputation,
 } from "@/lib/reputation/scores";
 import { applyReputationDecay, getLaneConfig } from "@/lib/reputation/constants";
