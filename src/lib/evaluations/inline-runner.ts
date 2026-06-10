@@ -7,13 +7,12 @@ import {
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
 import { BehaviorLogger } from "@/lib/evaluations/behavior";
-import {
-  certificationTierFromScore,
-  computeConfidenceScore,
-  computePerformanceScore,
-  computePublicReputation,
-} from "@/lib/reputation/scores";
 import { getLaneConfig } from "@/lib/reputation/constants";
+import { computeConfidenceScore } from "@/lib/reputation/scores";
+import {
+  finalizeEvaluationRun,
+  refreshAgentScoresAfterEvaluation,
+} from "@/lib/evaluations/finalize";
 
 type SampleTestResult = {
   name: string;
@@ -215,11 +214,15 @@ export async function processEvaluationInline(evaluationId: string) {
   );
 
   const audit = await logger.persist(evaluationId);
-  const performanceScore = computePerformanceScore({
-    overall: result.overall,
-    reliability: result.reliability,
-    latency: result.latency,
-    accuracy: result.accuracy,
+
+  const finalized = await finalizeEvaluationRun({
+    evaluationId,
+    agentId: evaluation.agentId,
+    lane: evaluation.lane,
+    result,
+    audit,
+    costUsd: 0.003,
+    latencyMs: result.tests[0]?.durationMs ?? result.latency,
   });
 
   const status = result.passed ? EvaluationStatus.PASSED : EvaluationStatus.FAILED;
@@ -228,8 +231,16 @@ export async function processEvaluationInline(evaluationId: string) {
 
   const resultsPayload: Prisma.InputJsonValue =
     laneConfig.feedbackLevel === FeedbackLevel.MINIMAL
-      ? { passed: result.passed, summary: result.failureReason ?? "Certification complete" }
-      : (result as unknown as Prisma.InputJsonValue);
+      ? {
+          passed: result.passed,
+          summary: result.failureReason ?? "Certification complete",
+          baselineDeviation: finalized.baselineDeviation,
+        }
+      : ({
+          ...result,
+          runMetrics: finalized.runMetrics,
+          baselineDeviation: finalized.baselineDeviation,
+        } as Prisma.InputJsonValue);
 
   await prisma.evaluation.update({
     where: { id: evaluationId },
@@ -240,43 +251,36 @@ export async function processEvaluationInline(evaluationId: string) {
       reliabilityScore: result.reliability,
       latencyScore: result.latency,
       accuracyScore: result.accuracy,
-      performanceScore,
+      performanceScore: finalized.performanceScore,
       results: resultsPayload,
       failureReason: result.failureReason,
       isPublicFailure,
       runHash: audit.runHash,
       auditHash: audit.auditHash,
+      runMetrics: finalized.runMetrics as Prisma.InputJsonValue,
+      baselineDeviation: finalized.baselineDeviation as Prisma.InputJsonValue,
+      behaviorSummary: finalized.behaviorSummary as Prisma.InputJsonValue,
+      reputationCertificate: finalized.reputationCertificate,
       completedAt: new Date(),
     },
   });
 
   const confidenceScore = await refreshAgentConfidence(evaluation.agentId);
 
-  const agentUpdate: {
-    performanceScore?: number;
-    confidenceScore: number;
-    reputationScore?: number;
-    certificationTier?: number;
-    lastCertifiedAt?: Date;
-    status?: "ACTIVE";
-    reputationDecayAt?: Date;
-  } = { confidenceScore };
+  await refreshAgentScoresAfterEvaluation({
+    agentId: evaluation.agentId,
+    lane: evaluation.lane,
+    passed: result.passed,
+    performanceScore: finalized.performanceScore,
+    confidenceScore,
+    consistencyScore: finalized.consistencyScore,
+    updatedBaseline: finalized.updatedBaseline,
+    baselineDeviation: finalized.baselineDeviation,
+    domainTags: finalized.domainTags,
+    reputationCertificate: finalized.reputationCertificate,
+    reputationCertHash: finalized.reputationCertHash,
+  });
 
-  if (evaluation.lane === EvaluationLane.CERTIFICATION && result.passed) {
-    agentUpdate.performanceScore = performanceScore;
-    const publicScore = computePublicReputation(performanceScore, confidenceScore, new Date());
-    agentUpdate.reputationScore = publicScore;
-    agentUpdate.certificationTier = certificationTierFromScore(publicScore);
-    agentUpdate.lastCertifiedAt = new Date();
-    agentUpdate.reputationDecayAt = new Date();
-    agentUpdate.status = "ACTIVE";
-  } else if (evaluation.lane === EvaluationLane.CERTIFICATION && !result.passed) {
-    agentUpdate.performanceScore = 0;
-    agentUpdate.reputationScore = 0;
-    agentUpdate.certificationTier = 0;
-  }
-
-  await prisma.agent.update({ where: { id: evaluation.agentId }, data: agentUpdate });
   await prisma.evaluation.update({ where: { id: evaluationId }, data: { confidenceScore } });
 
   return prisma.evaluation.findUniqueOrThrow({ where: { id: evaluationId } });

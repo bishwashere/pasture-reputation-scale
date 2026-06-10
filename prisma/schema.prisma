@@ -68,8 +68,14 @@ model Creator {
   registrationTxHash String?
   trustScore         Float    @default(0)
   totalStaked        String   @default("0")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+
+  // Cryptographic Agent Identity for portable reputation (Step 1)
+  agentIdentityDid        String  @unique
+  agentIdentityPublicKey  String
+  encryptedIdentityKey    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   agents         Agent[]
   stakesReceived Stake[]
@@ -98,6 +104,14 @@ model Agent {
   config           Json   @default("{}")
   bundleHash       String
   versionHash      String
+  versionManifest  Json   @default("{}")
+
+  // Portable identity + domain reputation (Steps 2 & 5)
+  agentDid          String @unique
+  domainTags        Json   @default("[]")
+  baselineProfile   Json   @default("{}")
+  consistencyScore  Float  @default(0)
+  domainScores      Json   @default("{}")
 
   status            AgentStatus @default(DRAFT)
   performanceScore  Float       @default(0)
@@ -106,6 +120,7 @@ model Agent {
   certificationTier Int         @default(0)
   lastCertifiedAt   DateTime?
   reputationDecayAt DateTime    @default(now())
+  reputationCertHash String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -153,6 +168,10 @@ model Evaluation {
 
   runHash       String?
   auditHash     String?
+  runMetrics         Json?
+  baselineDeviation  Json?
+  behaviorSummary    Json?
+  reputationCertificate Json?
   costCents     Int     @default(0)
   paymentTxHash String?
 
@@ -193,6 +212,8 @@ model BehaviorAudit {
   runHash      String
   auditHash    String
   logCount     Int
+  domainContext    Json?
+  signedSummary    String?
   createdAt    DateTime   @default(now())
 }
 

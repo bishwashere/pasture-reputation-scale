@@ -17,6 +17,7 @@ type EvaluationResult = {
   isPublicFailure: boolean;
   runHash: string | null;
   auditHash: string | null;
+  baselineDeviation?: Prisma.JsonValue;
   results: Prisma.JsonValue;
   createdAt: Date;
   completedAt: Date | null;
@@ -88,11 +89,23 @@ export function EvaluationResults({ evaluations }: { evaluations: EvaluationResu
                 ))}
               </div>
             ) : isMinimal ? (
-              <p className="mb-3 text-sm text-zinc-400">
-                {evaluation.status === "PASSED"
-                  ? "Certification passed. Detailed feedback withheld."
-                  : evaluation.failureReason ?? "Certification failed."}
-              </p>
+              <div className="mb-3 space-y-2 text-sm text-zinc-400">
+                <p>
+                  {evaluation.status === "PASSED"
+                    ? "Certification passed. Detailed feedback withheld."
+                    : evaluation.failureReason ?? "Certification failed."}
+                </p>
+                {evaluation.baselineDeviation &&
+                typeof evaluation.baselineDeviation === "object" &&
+                !Array.isArray(evaluation.baselineDeviation) ? (
+                  <p className="text-xs text-zinc-500">
+                    Baseline deviation:{" "}
+                    {"overallDeviation" in evaluation.baselineDeviation
+                      ? String(evaluation.baselineDeviation.overallDeviation)
+                      : "—"}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
 
             {evaluation.failureReason && !isMinimal ? (

@@ -44,16 +44,18 @@ export default async function AgentDetailPage({
             <p className="mt-2 text-sm text-zinc-400">
               {agent.platform} · {agent.category} · v{agent.version}
             </p>
-            <p className="mt-1 font-mono text-xs text-zinc-600">bundle:{agent.bundleHash.slice(0, 12)}…</p>
+            <p className="mt-1 font-mono text-xs text-zinc-600">did:{agent.agentDid.replace(/^did:/, "")}</p>
+            <p className="font-mono text-xs text-zinc-600">bundle:{agent.bundleHash.slice(0, 12)}…</p>
           </div>
           <ReputationBadge score={reputation.publicScore} tier={agent.certificationTier} decayed={reputation.publicScore < agent.reputationScore} />
         </div>
 
         <p className="mt-6 text-zinc-300">{agent.description}</p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
           {[
             ["Performance", reputation.performanceScore],
+            ["Consistency", reputation.consistencyScore],
             ["Confidence", reputation.confidenceScore],
             ["Public reputation", reputation.publicScore],
             ["Decay half-life", REPUTATION_DECAY_HALF_LIFE_DAYS],
@@ -69,6 +71,23 @@ export default async function AgentDetailPage({
             </div>
           ))}
         </div>
+
+        {Object.keys(reputation.domainScores).length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {Object.entries(reputation.domainScores).map(([domain, score]) => (
+              <span key={domain} className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-300">
+                {domain}: {formatScore(score)}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <p className="mt-4 text-xs text-zinc-500">
+          Portable reputation:{" "}
+          <a href={`/api/agents/${agent.id}/reputation`} className="text-[#0052FF] hover:underline">
+            /api/agents/{agent.id}/reputation
+          </a>
+        </p>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">

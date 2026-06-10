@@ -1,7 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { computePublicReputation } from "@/lib/reputation/scores";
+import {
+  buildPortableReputation,
+  computeConfidenceScore,
+  computePublicReputation,
+} from "@/lib/reputation/scores";
 import { applyReputationDecay, getLaneConfig } from "@/lib/reputation/constants";
+import { parseDomainTags } from "@/lib/reputation/domains";
 import { assertLaneAttemptAvailable } from "@/lib/lanes/limits";
+
 import { EvaluationLane, EvaluationStatus, FeedbackLevel } from "@prisma/client";
 
 export async function upsertUserByWallet(walletAddress: string) {
@@ -14,21 +20,45 @@ export async function upsertUserByWallet(walletAddress: string) {
 }
 
 export async function getAgentReputation(agent: {
+  id: string;
+  agentDid: string;
   performanceScore: number;
   confidenceScore: number;
+  consistencyScore: number;
   reputationScore: number;
   lastCertifiedAt: Date | null;
+  bundleHash: string;
+  domainScores: unknown;
+  certificationTier: number;
+  domainTags: unknown;
 }) {
   const publicScore = computePublicReputation(
     agent.performanceScore,
     agent.confidenceScore,
+    agent.consistencyScore,
     agent.lastCertifiedAt,
   );
+  const portable = buildPortableReputation({
+    agentDid: agent.agentDid,
+    agentId: agent.id,
+    performanceScore: agent.performanceScore,
+    consistencyScore: agent.consistencyScore,
+    confidenceScore: agent.confidenceScore,
+    publicScore,
+    domainScores: (agent.domainScores as Record<string, number>) ?? {},
+    certificationTier: agent.certificationTier,
+    lastCertifiedAt: agent.lastCertifiedAt,
+    bundleHash: agent.bundleHash,
+  });
   return {
     performanceScore: agent.performanceScore,
     confidenceScore: agent.confidenceScore,
+    consistencyScore: agent.consistencyScore,
     publicScore,
     storedScore: agent.reputationScore,
+    domainScores: (agent.domainScores as Record<string, number>) ?? {},
+    domainTags: parseDomainTags(agent.domainTags),
+    portable,
   };
 }
 

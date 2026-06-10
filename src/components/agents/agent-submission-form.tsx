@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 
 const PLATFORMS = ["Pasture", "OpenAI", "Anthropic", "Custom", "Other"];
+const DOMAIN_TAGS = ["coding", "research", "automation", "customer-support"] as const;
 
 export function AgentSubmissionForm() {
   const { address } = useAccount();
@@ -14,6 +15,7 @@ export function AgentSubmissionForm() {
     description: "",
     platform: "Custom",
     category: "",
+    domainTags: ["coding"] as string[],
     version: "1.0.0",
     codeRepoUrl: "",
     modelEndpointUrl: "",
@@ -30,6 +32,15 @@ export function AgentSubmissionForm() {
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleDomainTag(tag: string) {
+    setForm((prev) => {
+      const selected = prev.domainTags.includes(tag)
+        ? prev.domainTags.filter((value) => value !== tag)
+        : [...prev.domainTags, tag];
+      return { ...prev, domainTags: selected.length > 0 ? selected : prev.domainTags };
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -60,6 +71,7 @@ export function AgentSubmissionForm() {
           description: form.description,
           platform: form.platform,
           category: form.category,
+          domainTags: form.domainTags,
           version: form.version,
           codeRepoUrl: form.codeRepoUrl,
           modelEndpointUrl: form.modelEndpointUrl,
@@ -104,6 +116,25 @@ export function AgentSubmissionForm() {
         <div>
           <label className="mb-1 block text-sm text-zinc-300">Description</label>
           <textarea required rows={3} value={form.description} onChange={(e) => update("description", e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className="mb-2 block text-sm text-zinc-300">Domain tags</label>
+          <div className="flex flex-wrap gap-2">
+            {DOMAIN_TAGS.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleDomainTag(tag)}
+                className={`rounded-full px-3 py-1 text-xs ${
+                  form.domainTags.includes(tag)
+                    ? "bg-[#0052FF] text-white"
+                    : "border border-zinc-700 text-zinc-400"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DOMAIN_TAGS } from "@/lib/reputation/domains";
 
 export const agentBundleSchema = z.object({
   walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
@@ -6,6 +7,7 @@ export const agentBundleSchema = z.object({
   description: z.string().min(20).max(2000),
   platform: z.string().min(2).max(60),
   category: z.string().min(2).max(60),
+  domainTags: z.array(z.enum(DOMAIN_TAGS)).min(1).max(4),
   version: z.string().min(1).max(20),
   codeRepoUrl: z.string().url().optional().or(z.literal("")),
   modelEndpointUrl: z.string().url().optional().or(z.literal("")),

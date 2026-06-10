@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { agentBundleSchema } from "@/lib/validations";
 import { upsertUserByWallet } from "@/lib/services/agents";
 import { computeBundleHash, validateBundleInput } from "@/lib/bundle/hash";
+import { buildVersionManifest } from "@/lib/bundle/manifest";
+import { generateAgentDid } from "@/lib/crypto/identity";
 import { encryptSecret } from "@/lib/crypto/secrets";
 import { Prisma } from "@prisma/client";
 
@@ -29,7 +31,16 @@ export async function POST(request: Request) {
     }
 
     const bundleHash = computeBundleHash(bundleInput);
+    const versionHash = bundleHash.slice(0, 16);
+    const versionManifest = buildVersionManifest({
+      bundle: bundleInput,
+      bundleHash,
+      versionHash,
+      domainTags: data.domainTags,
+    });
     const creator = await prisma.creator.findUnique({ where: { userId: user.id } });
+    const creatorDid = creator?.agentIdentityDid ?? `did:rep:anonymous:${user.id}`;
+    const agentDid = generateAgentDid(creatorDid, bundleHash);
 
     const agent = await prisma.agent.create({
       data: {
@@ -49,12 +60,15 @@ export async function POST(request: Request) {
         tools: data.tools,
         config: data.config as Prisma.InputJsonValue,
         bundleHash,
-        versionHash: bundleHash.slice(0, 16),
+        versionHash,
+        versionManifest: versionManifest as Prisma.InputJsonValue,
+        agentDid,
+        domainTags: data.domainTags,
         versions: {
           create: {
             version: data.version,
             bundleHash,
-            versionHash: bundleHash.slice(0, 16),
+            versionHash,
             changelog: data.changelog,
             reputationReset: false,
           },
