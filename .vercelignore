@@ -1,20 +1,24 @@
 # Vercel deploys ONLY the Next.js coordinator (UI + light API).
 # Everything below either CANNOT run on Vercel (serverless, no Docker,
 # no long-running processes) or is unrelated to the web deployment.
+#
+# All directory patterns are root-anchored (leading /) so they don't
+# accidentally match same-named directories deeper in the tree (e.g.
+# /services/ vs /src/lib/services/).
 
 # Heavy Evaluation Worker — needs a Docker-capable host (Railway / Fly.io / VPS).
-services/
+/services/
 
 # Docker images: Evaluation Worker + per-run Agent Runner sandbox.
-docker/
-docker-compose.yml
+/docker/
+/docker-compose.yml
 
 # On-chain Solidity contracts — deployed to Base, not Vercel.
-contracts/
+/contracts/
 
 # Local tooling and docs.
-scripts/
-docs/
+/scripts/
+/docs/
 
 # Local env / build artifacts.
 .env
