@@ -49,7 +49,7 @@ async function probeEndpoint(
 ): Promise<EvaluationRunResult> {
   logger.log({
     actionType: "SYSTEM",
-    payload: { phase: "inline_start", mode: "inline", isolated: false },
+    payload: { phase: "inline_start", mode: "inline", isolated: false, system: "pasture-rep-protocol" },
   });
 
   if (!endpointUrl) {
@@ -70,7 +70,7 @@ async function probeEndpoint(
     };
   }
 
-  const prompt = "Reputation Protocol evaluation probe — respond with a brief summary.";
+  const prompt = "Pasture Reputation Protocol evaluation probe — respond with a brief summary.";
   logger.log({ actionType: "LLM_REQUEST", payload: { endpoint: endpointUrl, prompt } });
 
   const start = Date.now();

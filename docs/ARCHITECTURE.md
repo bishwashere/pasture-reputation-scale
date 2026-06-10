@@ -1,6 +1,6 @@
 # Architecture
 
-Reputation Protocol uses a **split architecture** for security and reliability. Agent code never runs on Vercel.
+Pasture Reputation Protocol uses a **split architecture** for security and reliability. Agent code never runs on Vercel.
 
 ## System diagram
 

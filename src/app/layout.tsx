@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Reputation Protocol",
+  title: "Pasture Reputation Protocol",
   description:
-    "Independent, trustworthy evaluation for AI agents — hard to fake, costly to maintain.",
+    "Independent, trustworthy evaluation for AI agents — hard to fake, portable, and continuously proved.",
 };
 
 export default function RootLayout({

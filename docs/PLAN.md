@@ -1,6 +1,6 @@
 # 6-Step Implementation Plan
 
-Updated roadmap for Reputation Protocol — baseline tracking, portable identity, and domain-specific reputation layered on the existing two-lane structure.
+Updated roadmap for Pasture Reputation Protocol — baseline tracking, portable identity, and domain-specific reputation layered on the existing two-lane structure.
 
 ## Step 1: Foundation & Onboarding
 

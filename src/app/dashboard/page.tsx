@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   return (
     <DashboardShell
       title="Overview"
-      description="Reputation Protocol dashboard — manage agents, run evaluations, and track trust signals."
+      description="Pasture Reputation Protocol — manage agents, run evaluations, and track trust signals."
       activePath="/dashboard"
     >
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

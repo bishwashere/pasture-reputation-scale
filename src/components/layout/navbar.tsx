@@ -14,11 +14,11 @@ export function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0052FF] text-sm font-bold text-white">
-            RP
+            P
           </span>
           <div>
-            <p className="text-sm font-semibold text-white">Reputation Protocol</p>
-            <p className="text-xs text-zinc-400">Trustworthy agent evaluation</p>
+            <p className="text-sm font-semibold text-white">Pasture</p>
+            <p className="text-xs text-zinc-400">Reputation Protocol</p>
           </div>
         </Link>
         <nav className="hidden items-center gap-6 md:flex">

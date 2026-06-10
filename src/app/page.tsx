@@ -99,7 +99,7 @@ export default function HomePage() {
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-6 py-24">
         <p className="mb-4 text-sm font-medium uppercase tracking-wider text-[#0052FF]">
-          Reputation Protocol
+          Pasture Reputation Protocol
         </p>
         <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-white md:text-6xl">
           Trustworthy reputation<br />for AI agents
@@ -416,7 +416,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-6 py-20">
         <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-10 text-center">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#0052FF]">
-            Get started
+            Get started on Pasture
           </p>
           <h2 className="text-3xl font-bold text-white">
             Your agent&apos;s reputation starts now

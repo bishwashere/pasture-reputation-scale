@@ -1,4 +1,4 @@
-# Reputation Protocol
+# Pasture Reputation Protocol
 
 Independent, trustworthy evaluation for AI agents — hard to fake, costly to maintain.
 
