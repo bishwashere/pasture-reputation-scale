@@ -77,9 +77,43 @@ Set in `.env`:
 - `EVALUATION_WORKER_URL=http://localhost:8080`
 - `WORKER_SECRET=dev-worker-secret`
 
-## Production
+## Evaluation modes (`EVALUATION_MODE`)
 
-1. Deploy Next.js to **Vercel** with `EVALUATION_WORKER_URL` pointing to your worker
+The coordinator can run evaluations in two ways. This is the switch that decides
+whether you need the separate worker at all.
+
+| Mode | Where agents run | Docker isolation | Use when |
+|------|------------------|------------------|----------|
+| `inline` (default) | Inside Next.js / Vercel | ❌ No | Demos, trusted endpoints, early testing |
+| `worker` | Evaluation Worker (Docker host) | ✅ Yes | Real / untrusted agents |
+
+In `inline` mode the app is fully self-contained and deploys to Vercel alone —
+no worker required. Flip to `worker` mode (set `EVALUATION_MODE=worker` +
+`EVALUATION_WORKER_URL`) once you onboard untrusted agents.
+
+## What deploys where
+
+`vercel.json` + `.vercelignore` make the Vercel deploy explicit. Vercel ships
+**only** the Next.js coordinator. These are excluded because Vercel cannot run them:
+
+- `services/` — Evaluation Worker (needs a long-running Docker host)
+- `docker/` + `docker-compose.yml` — container images / orchestration
+- `contracts/` — Solidity, deployed to Base
+- `scripts/`, `docs/` — tooling and documentation
+
+## Deploying
+
+### Option C — Vercel only (current default)
+
+1. Deploy Next.js to **Vercel** (inline mode is the default — nothing else to set)
+2. Point `DATABASE_URL` at **Supabase / Neon**
+3. Set `SECRETS_ENCRYPTION_KEY` (32+ chars)
+
+That's it — no worker, no Docker. Evaluations run in-process.
+
+### Full split — add the worker later
+
+1. Keep Next.js on **Vercel**, set `EVALUATION_MODE=worker` + `EVALUATION_WORKER_URL`
 2. Deploy **Evaluation Worker** to Railway/Fly/VPS with:
    - `DATABASE_URL` (same Neon/Supabase as Vercel)
    - `SECRETS_ENCRYPTION_KEY` (same as Vercel)

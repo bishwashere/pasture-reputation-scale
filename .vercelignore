@@ -1,0 +1,22 @@
+# Vercel deploys ONLY the Next.js coordinator (UI + light API).
+# Everything below either CANNOT run on Vercel (serverless, no Docker,
+# no long-running processes) or is unrelated to the web deployment.
+
+# Heavy Evaluation Worker — needs a Docker-capable host (Railway / Fly.io / VPS).
+services/
+
+# Docker images: Evaluation Worker + per-run Agent Runner sandbox.
+docker/
+docker-compose.yml
+
+# On-chain Solidity contracts — deployed to Base, not Vercel.
+contracts/
+
+# Local tooling and docs.
+scripts/
+docs/
+
+# Local env / build artifacts.
+.env
+.env.*
+!.env.example

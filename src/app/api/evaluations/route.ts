@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       evaluationId: evaluation.id,
-      status: "QUEUED",
+      status: dispatch.mode === "inline" ? dispatch.status : "QUEUED",
       costCents: evaluation.costCents,
       dispatch,
     });
