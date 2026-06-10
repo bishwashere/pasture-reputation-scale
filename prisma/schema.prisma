@@ -3,9 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "mongodb"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
+
+// MongoDB stores enums as strings — no native enum type needed.
+// Prisma handles the mapping transparently.
 
 enum EvaluationLane {
   PRACTICE
@@ -45,7 +49,7 @@ enum FeedbackLevel {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   walletAddress String   @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -56,9 +60,9 @@ model User {
 }
 
 model Creator {
-  id                 String   @id @default(cuid())
+  id                 String   @id @default(cuid()) @map("_id")
   userId             String   @unique
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User     @relation(fields: [userId], references: [id])
   displayName        String
   bio                String?
   registrationTxHash String?
@@ -72,9 +76,9 @@ model Creator {
 }
 
 model Agent {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) @map("_id")
   ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner     User     @relation(fields: [ownerId], references: [id])
   creatorId String?
   creator   Creator? @relation(fields: [creatorId], references: [id])
 
@@ -84,7 +88,6 @@ model Agent {
   category    String
   version     String @default("1.0.0")
 
-  // Bundle fields
   codeRepoUrl      String?
   modelEndpointUrl String?
   encryptedApiKey  String?
@@ -109,24 +112,29 @@ model Agent {
 
   evaluations Evaluation[]
   versions    AgentVersion[]
+
+  @@index([ownerId])
+  @@index([reputationScore])
 }
 
 model AgentVersion {
-  id              String   @id @default(cuid())
+  id              String   @id @default(cuid()) @map("_id")
   agentId         String
-  agent           Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent           Agent    @relation(fields: [agentId], references: [id])
   version         String
   bundleHash      String
   versionHash     String
   changelog       String?
   reputationReset Boolean  @default(true)
   createdAt       DateTime @default(now())
+
+  @@index([agentId])
 }
 
 model Evaluation {
-  id      String @id @default(cuid())
+  id      String @id @default(cuid()) @map("_id")
   agentId String
-  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent   Agent  @relation(fields: [agentId], references: [id])
 
   lane           EvaluationLane
   status         EvaluationStatus @default(QUEUED)
@@ -139,13 +147,13 @@ model Evaluation {
   performanceScore Float?
   confidenceScore  Float?
 
-  results       Json?
-  failureReason String?
+  results         Json?
+  failureReason   String?
   isPublicFailure Boolean @default(false)
 
-  runHash   String?
-  auditHash String?
-  costCents Int     @default(0)
+  runHash       String?
+  auditHash     String?
+  costCents     Int     @default(0)
   paymentTxHash String?
 
   commitmentAccepted Boolean   @default(false)
@@ -158,12 +166,16 @@ model Evaluation {
 
   behaviorLogs  BehaviorLog[]
   behaviorAudit BehaviorAudit?
+
+  @@index([agentId])
+  @@index([agentId, lane, status])
+  @@index([agentId, lane, createdAt])
 }
 
 model BehaviorLog {
-  id           String             @id @default(cuid())
+  id           String             @id @default(cuid()) @map("_id")
   evaluationId String
-  evaluation   Evaluation         @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  evaluation   Evaluation         @relation(fields: [evaluationId], references: [id])
   sequence     Int
   actionType   BehaviorActionType
   payload      Json
@@ -175,9 +187,9 @@ model BehaviorLog {
 }
 
 model BehaviorAudit {
-  id           String     @id @default(cuid())
+  id           String     @id @default(cuid()) @map("_id")
   evaluationId String     @unique
-  evaluation   Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id])
   runHash      String
   auditHash    String
   logCount     Int
@@ -185,19 +197,22 @@ model BehaviorAudit {
 }
 
 model Stake {
-  id          String   @id @default(cuid())
+  id          String   @id @default(cuid()) @map("_id")
   stakerId    String
-  staker      User     @relation(fields: [stakerId], references: [id], onDelete: Cascade)
+  staker      User     @relation(fields: [stakerId], references: [id])
   creatorId   String
-  creator     Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creator     Creator  @relation(fields: [creatorId], references: [id])
   amount      String
   txHash      String   @unique
   blockNumber Int?
   createdAt   DateTime @default(now())
+
+  @@index([stakerId])
+  @@index([creatorId])
 }
 
 model ChainEvent {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) @map("_id")
   txHash    String
   logIndex  Int
   eventName String

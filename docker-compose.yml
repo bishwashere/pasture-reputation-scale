@@ -1,23 +1,9 @@
-services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: reputation
-      POSTGRES_PASSWORD: reputation
-      POSTGRES_DB: reputation
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - rep-protocol-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U reputation -d reputation"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+# docker-compose is for the Evaluation Worker only.
+# The database is MongoDB Atlas (cloud) — no local DB container needed.
+#
+# NOT deployed to Vercel. Run on a Docker-capable host (Railway / Fly.io / VPS).
 
+services:
   evaluation-worker:
     build:
       context: .
@@ -27,17 +13,14 @@ services:
       - "8080:8080"
     environment:
       PORT: 8080
-      DATABASE_URL: postgresql://reputation:reputation@postgres:5432/reputation
-      SECRETS_ENCRYPTION_KEY: dev-only-encryption-key-not-for-prod!!
-      WORKER_SECRET: dev-worker-secret
+      DATABASE_URL: "${DATABASE_URL}"
+      SECRETS_ENCRYPTION_KEY: "${SECRETS_ENCRYPTION_KEY}"
+      WORKER_SECRET: "${WORKER_SECRET:-dev-worker-secret}"
       DOCKER_ENABLED: "true"
       DOCKER_NETWORK: rep-protocol-net
       AGENT_RUNNER_IMAGE: rep-protocol/agent-runner:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - rep-protocol-net
     healthcheck:
@@ -49,6 +32,3 @@ services:
 networks:
   rep-protocol-net:
     name: rep-protocol-net
-
-volumes:
-  postgres_data:
